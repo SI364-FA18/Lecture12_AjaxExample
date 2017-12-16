@@ -241,11 +241,11 @@ def internal_server_error():
 def user_registration():
 	form = RegistrationForm()
 	if form.validate_on_submit():
-		filename = secure_filename(form.file.data.filename)
-		form.file.data.save('static/imgs/' + filename)
-		try:
+		if form.file.data:
+			filename = secure_filename(form.file.data.filename)
+			form.file.data.save('static/imgs/' + filename)
 			user = User(email=form.email.data, username=form.username.data, password=form.password.data, pro_pic=('static/imgs/'+filename))
-		except:
+		else:
 			user = User(email=form.email.data, username=form.username.data, password=form.password.data, pro_pic='No image available')
 		db.session.add(user)
 		db.session.commit()
