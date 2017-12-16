@@ -1,6 +1,6 @@
 <a href="{{ url_for('logout') }}" class= "button">Logout</a><br>
 <a href= "{{ url_for('wishlist') }}">See Wishlist</a><br>
-{% if image_link != 'No image available'}
+{% if image_link != 'No image available' %}
 <img src= "{{ image_link }}" alt= "Profile Picture" align="left" width="50" height="50">
 {% endif %}
 <h1>Welcome {{ username }}</h1>
