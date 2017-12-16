@@ -246,7 +246,6 @@ def user_registration():
 			form.file.data.save('static/imgs/' + filename)
 			user = User(email=form.email.data, username=form.username.data, password=form.password.data, pro_pic=('static/imgs/'+filename))
 		except:
-			print('working!')
 			user = User(email=form.email.data, username=form.username.data, password=form.password.data, pro_pic='No image available')
 		db.session.add(user)
 		db.session.commit()
