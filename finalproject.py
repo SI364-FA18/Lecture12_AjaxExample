@@ -66,7 +66,7 @@ class User(UserMixin, db.Model):
 	id = db.Column(db.Integer, primary_key=True)
 	username = db.Column(db.String(128), unique=True, index=True)
 	email = db.Column(db.String(128), unique=True, index=True)
-	pro_pic = db.Column(db.String(128), unique=True)
+	pro_pic = db.Column(db.String(128))
 	wishlist_restaurants = db.relationship('WishListRestaurants', backref='User')
 	password_hash = db.Column(db.String(128))
 
@@ -241,6 +241,7 @@ def internal_server_error():
 def user_registration():
 	form = RegistrationForm()
 	if form.validate_on_submit():
+		print(form.file.data)
 		if form.file.data:
 			filename = secure_filename(form.file.data.filename)
 			form.file.data.save('static/imgs/' + filename)
