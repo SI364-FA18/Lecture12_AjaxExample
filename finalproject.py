@@ -1,7 +1,7 @@
 import json
 import requests
 import os
-from flask import Flask, request, render_template, session, redirect, url_for, flash
+from flask import Flask, request, render_template, session, redirect, url_for, flash, jsonify
 from flask_script import Manager, Shell
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, FileField, PasswordField, BooleanField, ValidationError, SelectMultipleField
@@ -23,7 +23,7 @@ app = Flask(__name__)
 app.debug = True
 app.config['SECRET_KEY'] = 'randomstringthatishardtoguessldkljlk'
 app.static_folder = 'static'
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get('DATABASE_URL') or "postgresql://localhost/uniquenamefinalproject"
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get('DATABASE_URL') or "postgresql://localhost/jullockefinalproject"
 app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -50,7 +50,7 @@ login_manager.login_view = 'login'
 login_manager.init_app(app)
 
 def make_shell_context():
-    return dict(app=app, db=db, City=City, Cuisine=Cuisine, Restaurant=Restaurant, User=User)
+    return dict(app=app, db=db, City=City, Cuisine=Cuisine, Restaurant=Restaurant, User=User, WishListRestaurants=WishListRestaurants)
 manager.add_command("shell", Shell(make_context=make_shell_context))
 
 def send_email(to, subject, template, **kwargs):
@@ -66,7 +66,7 @@ class User(UserMixin, db.Model):
 	id = db.Column(db.Integer, primary_key=True)
 	username = db.Column(db.String(128), unique=True, index=True)
 	email = db.Column(db.String(128), unique=True, index=True)
-	#pro_pic = db.Column(db.LargeBinary, unique=True) #?? IS THIS HOW IMG SHOULD BE SAVED?
+	pro_pic = db.Column(db.String(128), unique=True) #?? IS THIS HOW IMG SHOULD BE SAVED?
 	wishlist_restaurants = db.relationship('WishListRestaurants', backref='User')
 	password_hash = db.Column(db.String(128))
 
@@ -151,9 +151,9 @@ def load_user(user_id):
 	return User.query.get(int(user_id))
 
 class RegistrationForm(FlaskForm):
-	email = StringField('Email: ', validators=[Required(), Email()]) #?? VALIDATORS?!
+	email = StringField('Email: ', validators=[Required(), Email()])
 	username = StringField('Username: ', validators=[Required()])
-	pro_pic = FileField('Upload a profile picture: ')
+	file = FileField('Upload a profile picture: ')
 	password = PasswordField('Password: ', validators=[Required(), EqualTo('confirm_password', message="Oops, passwords don't match!")])
 	confirm_password = PasswordField('Confirm your password: ', validators=[Required()])
 	submit = SubmitField('Register')
@@ -202,7 +202,6 @@ def get_or_create_cuisine(db_session, cuisine):
 
 def get_or_create_restaurant(db_session, restaurant_name, city_name, cuisines_list = []):
 	city = get_or_create_city(db_session, city=city_name)
-	#cuisine = get_or_create_cuisine(cuisine_name)
 	restaurant = db_session.query(Restaurant).filter_by(name=restaurant_name, city_id=city.id).first()
 	if restaurant:
 		return restaurant
@@ -242,28 +241,9 @@ def internal_server_error():
 def user_registration():
 	form = RegistrationForm()
 	if form.validate_on_submit():
-		#pro_pic_data = request.FILES[form.file.name].read() #?? QUESTION ABOUT THIS PROCESS OF SAVING FILE TO DB
-		#open(os.path.join(UPLOAD_PATH, form.file.data), 'w').write(pro_pic_data)
-		#form.file.data.save('static/imgs/' + filename)
-		#pro_pic_path = 'static/imgs/' + filename
-		# filename = secure_filename(form.file.data)
-		# path = 'static/imgs' + filename
-		# form.file.data.save(path)
-		#pro_pic = form.file.data.read()
-		# if 'file' not in request.files:
-		# 	print('No file')
-		# else:
-		# 	file = request.files['file']
-		# 	print(file)
-		# a = request.args
-		# for each in a:
-		# 	print(a.get(each))
-		# 	print(a.getlist(each))
-		print(type(form.pro_pic))
-		print(type(form.pro_pic.data))
-		filename = secure_filename(form.pro_pic.data.filename)
-		form.pro_pic.data.save('static/imgs/' + filename)
-		user = User(email=form.email.data, username=form.username.data, password=form.password.data) #?? ADD IN PRO PIC!
+		filename = secure_filename(form.file.data.filename)
+		form.file.data.save('static/imgs/' + filename)
+		user = User(email=form.email.data, username=form.username.data, password=form.password.data, pro_pic=('static/imgs/'+filename)) #?? ADD IN PRO PIC!
 		db.session.add(user)
 		db.session.commit()
 		flash("Great! You're all set")
@@ -288,9 +268,9 @@ def logout():
 	flash("You're logged out!")
 	return redirect(url_for('login'))
 
-@app.route('/hidden')
-def hidden():
-	return render_template('hidden.html') #?? HOW TO WORK WITH LOGIN_REQUIRED
+# @app.route('/hidden')
+# def hidden():
+# 	return render_template('hidden.html') #?? HOW TO WORK WITH LOGIN_REQUIRED
 
 @app.route('/', methods=["GET", "POST"])
 @login_required
@@ -302,10 +282,10 @@ def welcomepage():
 		session['cuisine'] = cuisine
 		session['city'] = city
 		restaurant_data = get_restaurants(cuisine=cuisine, city=city)
-		return render_template('addrestaurants.html', data=restaurant_data)
-	return render_template('welcomepage.html', form=form)
+		return render_template('addrestaurants.html', data=restaurant_data, username=current_user.username, image_link=current_user.pro_pic)
+	return render_template('welcomepage.html', form=form, username=current_user.username, image_link = current_user.pro_pic)
 
-@app.route('/wishlist', methods=["POST"])
+@app.route('/wishlist', methods=["POST", "GET"])
 @login_required
 def wishlist():
 	if request.method == 'POST':
@@ -313,17 +293,19 @@ def wishlist():
 		y = [get_or_create_restaurant(db.session, restaurant_name=each, city_name=session['city'], cuisines_list=[session['cuisine']]) for each in to_add]
 		w = get_or_create_wishlist(db.session, restaurants=y)
 		send_email(current_user.email, 'New Restaurants Added To WishList', 'mail/new_restaurant', data=to_add, city=session['city'])
-
-	#restaurants = Restaurant.query.all()
-	#res_dict = {}
-	#for each in restaurants:
-		# wishlist.restaurants.append(each.name) ?? SAVING TO SPECIFIC WISHLIST
-	#	city_name = City.query.filter_by(id=each.city_id).first()
-		# cuisine_name = Cuisine.query.filter_by(id=each.cuisines).first() #?? HOW TO SHOW TYPE OF CUISINE
-	#	res_dict[each.name] = (city_name.name, 'cuisine name here')
-	#num_restaurants = len(restaurants)
 		q = [each.name for each in w.restaurants]
-		return render_template('seewishlist.html', res_dict = q, num_restaurants=w.restaurants.count())
+		return render_template('seewishlist.html', res_list = q, num_restaurants=w.restaurants.count(), username=current_user.username, image_link=current_user.pro_pic)
+	w = WishListRestaurants.query.filter_by(user_id=current_user.id).first()
+	if w:
+		return render_template('seewishlist.html', res_list = [(x.name, City.query.filter_by(id=x.city_id).first().name) for x in w.restaurants], num_restaurants=w.restaurants.count(), username=current_user.username, image_link=current_user.pro_pic)
+	else:
+		return render_template('emptywishlist.html', username=current_user.username, image_link=current_user.pro_pic)
+
+@app.route('/ajax')
+@login_required
+def translate():
+    x = jsonify({"livingston" : [{'name' : restaurant['restaurant']['name']} for restaurant in get_restaurants("Asian", "Livingston, NJ")]})
+    return x
 
 if __name__ == '__main__':
     db.create_all()
