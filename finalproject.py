@@ -66,7 +66,7 @@ class User(UserMixin, db.Model):
 	id = db.Column(db.Integer, primary_key=True)
 	username = db.Column(db.String(128), unique=True, index=True)
 	email = db.Column(db.String(128), unique=True, index=True)
-	pro_pic = db.Column(db.String(128), unique=True) #?? IS THIS HOW IMG SHOULD BE SAVED?
+	pro_pic = db.Column(db.String(128), unique=True)
 	wishlist_restaurants = db.relationship('WishListRestaurants', backref='User')
 	password_hash = db.Column(db.String(128))
 
@@ -243,7 +243,10 @@ def user_registration():
 	if form.validate_on_submit():
 		filename = secure_filename(form.file.data.filename)
 		form.file.data.save('static/imgs/' + filename)
-		user = User(email=form.email.data, username=form.username.data, password=form.password.data, pro_pic=('static/imgs/'+filename)) #?? ADD IN PRO PIC!
+		try:
+			user = User(email=form.email.data, username=form.username.data, password=form.password.data, pro_pic=('static/imgs/'+filename))
+		except:
+			user = User(email=form.email.data, username=form.username.data, password=form.password.data, pro_pic='No image available')
 		db.session.add(user)
 		db.session.commit()
 		flash("Great! You're all set")

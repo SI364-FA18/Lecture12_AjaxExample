@@ -3,7 +3,10 @@
 <a href="{{ url_for('logout') }}" class= "button">Logout</a><br>
 </head>
 <body>
-	<img src= "{{ image_link }}" alt= "Profile Picture" align="left" width="50" height="50"><h1>{{ username }}</h1><br>
+	{% if image_link != 'No image available'}
+	<img src= "{{ image_link }}" alt= "Profile Picture" align="left" width="50" height="50">
+	{% endif %}
+	<h1>{{ username }}</h1><br>
 	<form action="{{ url_for('wishlist')}}" method="POST">
 		<h2>Which restaurants would you like to add to your WishList?</h2><br>
 		{%for d in data%}
