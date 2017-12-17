@@ -30,8 +30,8 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['MAIL_SERVER'] = 'smtp.googlemail.com'
 app.config['MAIL_PORT'] = 587 #default
 app.config['MAIL_USE_TLS'] = True
-#app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
-#app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
 app.config['MAIL_SUBJECT_PREFIX'] = '[FINALPROJECT]'
 app.config['MAIL_SENDER'] = 'Admin <jullocke364@gmail.com>'
 app.config['ADMIN'] = os.environ.get('ADMIN')
@@ -296,8 +296,7 @@ def wishlist():
 		y = [get_or_create_restaurant(db.session, restaurant_name=each, city_name=session['city'], cuisines_list=[session['cuisine']]) for each in to_add]
 		w = get_or_create_wishlist(db.session, restaurants=y)
 		send_email(current_user.email, 'New Restaurants Added To WishList', 'mail/new_restaurant', data=to_add, city=session['city'])
-		q = [each.name for each in w.restaurants]
-		return render_template('seewishlist.html', res_list = q, num_restaurants=w.restaurants.count(), username=current_user.username, image_link=current_user.pro_pic)
+		return render_template('seewishlist.html', res_list = [(x.name, City.query.filter_by(id=x.city_id).first().name) for x in w.restaurants], num_restaurants=w.restaurants.count(), username=current_user.username, image_link=current_user.pro_pic)
 	w = WishListRestaurants.query.filter_by(user_id=current_user.id).first()
 	if w:
 		return render_template('seewishlist.html', res_list = [(x.name, City.query.filter_by(id=x.city_id).first().name) for x in w.restaurants], num_restaurants=w.restaurants.count(), username=current_user.username, image_link=current_user.pro_pic)

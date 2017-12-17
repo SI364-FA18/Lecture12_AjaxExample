@@ -1,5 +1,8 @@
 <a href="{{ url_for('logout') }}" class= "button">Logout</a><br>
-<img src= "{{ image_link }}" alt= "Profile Picture" align="left" width="50" height="50"><h1>{{ username }}</h1>
+{% if image_link != 'No image available' %}
+<img src= "{{ image_link }}" alt= "Profile Picture" align="left" width="50" height="50">
+{% endif %}
+<h1>{{ username }}</h1>
 <h1>There are {{ num_restaurants }} restaurants in your wishlist</h1>
 <a href= "{{ url_for('welcomepage') }}">Click here to search for more restaurants to add</a>
 {% for res in res_list %}
