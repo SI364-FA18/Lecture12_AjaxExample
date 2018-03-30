@@ -1,9 +1,5 @@
-<a href="{{ url_for('logout') }}" class= "button">Logout</a><br>
-<a href= "{{ url_for('wishlist') }}">See Wishlist</a><br>
-{% if image_link != 'No image available' %}
-<img src= "{{ image_link }}" alt= "Profile Picture" align="left" width="50" height="50">
-{% endif %}
-<h1>Welcome {{ username }}</h1>
+
+<h1>Welcome</h1>
 <h2>What type of food are you looking for?</h2><br>
 <form method="POST">
 	{{ form.csrf_token }}
@@ -13,13 +9,14 @@
 	{{ form.submit() }}
 </form>
 
-<button onClick="runAJAX()">Quick List of Asian Restaurants in Livingston, NJ</button>
+<button onClick="runAJAX()">Quick List of  Restaurants in Livingston, NJ</button>
 
 <div>
 	{% for message in get_flashed_messages() %}
 	{{ message }}
 	{% endfor %}
 </div>
+
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
 
 <script>
@@ -27,11 +24,10 @@ function runAJAX () {
 	$.ajax({
 	  url: "/ajax",
 		dataType: "json"
-	})
-	  .done(function( data ) {
+	}).done(function( data ) {
 			$.each(data.livingston, function(index, value) {
 	    $("<p>"+ value.name + "</p>").appendTo($('div'))
-	});
+			});
 	  });
-		}
+	}
 </script>
