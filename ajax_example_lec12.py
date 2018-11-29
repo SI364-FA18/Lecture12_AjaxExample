@@ -1,5 +1,3 @@
-# __authors__ = Julia Locke, Jackie Cohen
-
 import json
 import requests
 import os
